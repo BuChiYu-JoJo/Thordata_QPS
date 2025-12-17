@@ -38,7 +38,8 @@ class SerpAPITester:
         'yandex', 'duckduckgo'
     ]
 
-    def __init__(self, api_key, save_details=False):
+    def __init__(self, api_key, save_details=False, host="scraperapi.thordata.com",
+                 product="Thordata", request_path="/request"):
         """
         初始化SerpAPI测试器
 
@@ -47,7 +48,9 @@ class SerpAPITester:
             save_details: 是否保存每个请求的详细CSV记录
         """
         self.api_key = api_key
-        self.host = "scraperapi.thordata.com"
+        self.host = host
+        self.product = product
+        self.request_path = request_path
         self.save_details = save_details
         # 默认关键词池，当引擎未配置专属关键词时回退使用
         self.keyword_pool = [
@@ -343,7 +346,7 @@ class SerpAPITester:
         """
         result = {
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'product': 'Thordata',
+            'product': self.product,
             'engine': engine,
             'query': json.dumps(query, ensure_ascii=False) if isinstance(query, dict) else query,
             'status_code': None,
@@ -389,7 +392,7 @@ class SerpAPITester:
                 "Content-Type": "application/x-www-form-urlencoded"
             }
 
-            path = "/request"
+            path = self.request_path
             conn = http.client.HTTPSConnection(self.host, timeout=60)
 
             start_time = time.perf_counter()
@@ -646,7 +649,7 @@ class SerpAPITester:
 
                 # 计算统计数据
                 stats = self._calculate_statistics(
-                    'Thordata', engine, results, total_requests,
+                    self.product, engine, results, total_requests,
                     concurrency, total_duration
                 )
                 all_statistics.append(stats)
@@ -780,7 +783,8 @@ class SerpAPITester:
             results: 请求结果列表
             concurrency: 并发数，用于文件名区分
         """
-        filename = f"thordata_{engine}_c{concurrency}_detailed_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        prefix = self.product.lower().replace(" ", "_")
+        filename = f"{prefix}_{engine}_c{concurrency}_detailed_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
         fieldnames = [
             'timestamp', 'product', 'engine', 'query', 'status_code',
@@ -803,7 +807,7 @@ class SerpAPITester:
 
         print(f"  详细记录已保存到: {filename}")
 
-    def save_summary_statistics(self, statistics, filename='thordata_summary_statistics.csv'):
+    def save_summary_statistics(self, statistics, filename=None):
         """
         保存汇总统计表
 
@@ -814,6 +818,10 @@ class SerpAPITester:
         if not statistics:
             print("没有统计数据可保存")
             return
+
+        if filename is None:
+            prefix = self.product.lower().replace(" ", "_")
+            filename = f"{prefix}_summary_statistics.csv"
 
         fieldnames = [
             '产品类别', '引擎', '请求总数', '并发数', '请求速率(req/s)',
@@ -888,6 +896,12 @@ def main():
 
     parser.add_argument('-k', '--api-key', type=str,
                         help='SerpAPI认证密钥')
+    parser.add_argument('--host', type=str, default='scraperapi.thordata.com',
+                        help='API主机，例如 Brightdata 时传入 serp.brightdata.com')
+    parser.add_argument('--request-path', type=str, default='/request',
+                        help='API请求路径 (默认: /request)')
+    parser.add_argument('--product', type=str, default='Thordata',
+                        help='产品名称，统计输出时使用')
     parser.add_argument('-e', '--engines', type=str, nargs='+',
                         help='要测试的搜索引擎列表')
     parser.add_argument('--all-engines', action='store_true',
@@ -903,7 +917,7 @@ def main():
     parser.add_argument('--save-details', action='store_true',
                         help='保存每个请求的详细CSV记录')
     parser.add_argument('-o', '--output', type=str,
-                        default='serpapi_summary_statistics.csv',
+                        default=None,
                         help='汇总统计表输出文件名')
     parser.add_argument('--list-engines', action='store_true',
                         help='列出所有支持的引擎')
@@ -939,7 +953,13 @@ def main():
         return
 
     # 创建测试器
-    tester = SerpAPITester(args.api_key, save_details=args.save_details)
+    tester = SerpAPITester(
+        args.api_key,
+        save_details=args.save_details,
+        host=args.host,
+        product=args.product,
+        request_path=args.request_path
+    )
 
     # 运行测试：支持连续并发配置
     concurrency_list = args.concurrency_steps if args.concurrency_steps else [args.concurrency]
