@@ -46,6 +46,9 @@ class SerpAPITester:
         Args:
             api_key: SerpAPI认证密钥
             save_details: 是否保存每个请求的详细CSV记录
+            host: API 主机地址（Brightdata/Thordata 兼容）
+            product: 产品标签，用于输出标识
+            request_path: API 请求路径
         """
         self.api_key = api_key
         self.host = host
@@ -918,7 +921,7 @@ def main():
                         help='保存每个请求的详细CSV记录')
     parser.add_argument('-o', '--output', type=str,
                         default=None,
-                        help='汇总统计表输出文件名')
+                        help='汇总统计表输出文件名(默认按产品自动命名)')
     parser.add_argument('--list-engines', action='store_true',
                         help='列出所有支持的引擎')
 
