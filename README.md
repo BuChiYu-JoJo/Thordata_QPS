@@ -10,8 +10,7 @@
 python Thordata_QPS.py -k <API_KEY> --all-engines -t 60 -c 5
 
 # Brightdata（保持请求参数不变，仅切换主机/产品标识）
-python Thordata_QPS.py -k <API_KEY> --product Brightdata --host serp.brightdata.com \
-  --request-path /request --all-engines -t 60 -c 5
+python Thordata_QPS.py -k <API_KEY> --product Brightdata --host serp.brightdata.com --all-engines -t 60 -c 5
 
 # 并发阶梯测试
 python Thordata_QPS.py -k <API_KEY> -e google bing -t 30 --concurrency-steps 5 10 20

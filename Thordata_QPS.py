@@ -12,6 +12,7 @@ import argparse
 import concurrent.futures
 import random
 import itertools
+import re
 import os
 from urllib.parse import urlencode, urlparse
 from datetime import datetime
@@ -41,14 +42,14 @@ class SerpAPITester:
     def __init__(self, api_key, save_details=False, host="scraperapi.thordata.com",
                  product="Thordata", request_path="/request"):
         """
-        初始化SerpAPI测试器
+        Initialize the SerpAPI tester.
 
         Args:
-            api_key: SerpAPI认证密钥
-            save_details: 是否保存每个请求的详细CSV记录
-            host: API 主机地址（Brightdata/Thordata 兼容）
-            product: 产品标签，用于输出标识
-            request_path: API 请求路径
+            api_key: API credential.
+            save_details: Whether to save per-request CSV records.
+            host: API host (compatible with Brightdata/Thordata).
+            product: Product label used for outputs.
+            request_path: API request path.
         """
         self.api_key = api_key
         self.host = host
@@ -335,6 +336,11 @@ class SerpAPITester:
                 "charger"
             ]
         }
+
+    def _sanitize_product_name(self):
+        """Normalize product name to a filename-safe underscore format."""
+        sanitized = re.sub(r'[^a-z0-9_-]+', '_', self.product.lower()).strip('_')
+        return sanitized or "unnamed"
 
     def make_request(self, engine, query):
         """
@@ -786,7 +792,7 @@ class SerpAPITester:
             results: 请求结果列表
             concurrency: 并发数，用于文件名区分
         """
-        prefix = self.product.lower().replace(" ", "_")
+        prefix = self._sanitize_product_name()
         filename = f"{prefix}_{engine}_c{concurrency}_detailed_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
 
         fieldnames = [
@@ -823,7 +829,7 @@ class SerpAPITester:
             return
 
         if filename is None:
-            prefix = self.product.lower().replace(" ", "_")
+            prefix = self._sanitize_product_name()
             filename = f"{prefix}_summary_statistics.csv"
 
         fieldnames = [
@@ -879,51 +885,51 @@ class SerpAPITester:
 def main():
     """主函数"""
     parser = argparse.ArgumentParser(
-        description='SerpAPI性能测试脚本',
+        description='SerpAPI performance test script',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-示例用法:
-  # 测试单个引擎
-  python serpapi_test.py -k YOUR_API_KEY -e google -t 60 -c 5
+Examples:
+  # Test single engine
+  python Thordata_QPS.py -k YOUR_API_KEY -e google -t 60 -c 5
 
-  # 测试多个引擎
-  python serpapi_test.py -k YOUR_API_KEY -e google bing yahoo -t 120 -c 10
+  # Test multiple engines
+  python Thordata_QPS.py -k YOUR_API_KEY -e google bing yahoo -t 120 -c 10
 
-  # 测试所有引擎
-  python serpapi_test.py -k YOUR_API_KEY --all-engines -t 60 -c 5
+  # Test all engines
+  python Thordata_QPS.py -k YOUR_API_KEY --all-engines -t 60 -c 5
 
-  # 启用详细CSV记录
-  python serpapi_test.py -k YOUR_API_KEY -e google -t 60 -c 5 --save-details
+  # Save detailed CSV records
+  python Thordata_QPS.py -k YOUR_API_KEY -e google -t 60 -c 5 --save-details
         """
     )
 
     parser.add_argument('-k', '--api-key', type=str,
-                        help='SerpAPI认证密钥')
+                        help='SerpAPI API key')
     parser.add_argument('--host', type=str, default='scraperapi.thordata.com',
-                        help='API主机，例如 Brightdata 时传入 serp.brightdata.com')
+                        help='API host (e.g., serp.brightdata.com for Brightdata)')
     parser.add_argument('--request-path', type=str, default='/request',
-                        help='API请求路径 (默认: /request)')
+                        help='API request path (default: /request)')
     parser.add_argument('--product', type=str, default='Thordata',
-                        help='产品名称，统计输出时使用')
+                        help='Product label used in outputs')
     parser.add_argument('-e', '--engines', type=str, nargs='+',
-                        help='要测试的搜索引擎列表')
+                        help='List of search engines to test')
     parser.add_argument('--all-engines', action='store_true',
-                        help='测试所有支持的引擎')
+                        help='Test all supported engines')
     parser.add_argument('-t', '--duration', type=int, default=60,
-                        help='每个引擎的运行时间(秒) (默认: 60)')
+                        help='Duration per engine (seconds) (default: 60)')
     parser.add_argument('-c', '--concurrency', type=int, default=5,
-                        help='并发数 (默认: 5)')
+                        help='Concurrency (default: 5)')
     parser.add_argument('--concurrency-steps', type=int, nargs='+',
-                        help='连续执行的并发列表，例如: --concurrency-steps 20 50')
+                        help='Run multiple concurrency levels, e.g., --concurrency-steps 20 50')
     parser.add_argument('-q', '--query', type=str,
-                        help='搜索关键词 (默认: 随机)')
+                        help='Search keyword (default: random)')
     parser.add_argument('--save-details', action='store_true',
-                        help='保存每个请求的详细CSV记录')
+                        help='Save detailed CSV records for each request')
     parser.add_argument('-o', '--output', type=str,
                         default=None,
-                        help='汇总统计表输出文件名(默认按产品自动命名)')
+                        help='Summary CSV filename (default: auto-named with product)')
     parser.add_argument('--list-engines', action='store_true',
-                        help='列出所有支持的引擎')
+                        help='List all supported engines')
 
     args = parser.parse_args()
 
