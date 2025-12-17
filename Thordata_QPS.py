@@ -566,7 +566,7 @@ class SerpAPITester:
         print(f"  运行时间: {duration_seconds}秒")
         print(f"  并发数: {concurrency}")
         print(f"  缓存: 禁用 (no_cache=true)")
-        print("-" * 80, flush=True)
+        print("-" * 80)
 
         # 记录并发测试的总开始时间
         total_start_time = start_monotonic
@@ -584,9 +584,8 @@ class SerpAPITester:
                 try:
                     worker_results = future.result()
                     results.extend(worker_results)
-                    print(f"  线程{idx}完成，处理请求数: {len(worker_results)}", flush=True)
                 except Exception as e:
-                    print(f"  线程 {idx} 异常: {str(e)}", flush=True)
+                    print(f"  线程 {idx} 异常: {str(e)}")
 
         # 记录并发测试的总结束时间
         total_end_time = time.perf_counter()
@@ -947,7 +946,7 @@ def main():
     all_statistics = []
 
     for conc in concurrency_list:
-        print(f"\n==== 开始并发 {conc} 的测试 ====", flush=True)
+        print(f"\n==== 开始并发 {conc} 的测试 ====")
         results, statistics = tester.run_all_engines_test(
             engines, args.duration, conc
         )
